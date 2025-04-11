@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS lineas (
+  id VARCHAR(100) PRIMARY KEY,
+  color VARCHAR(20),
+  geojson JSON
+);

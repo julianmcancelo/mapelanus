@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editor de Calles en Tiempo Real</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style> html, body, #map { height: 100%; margin: 0; } </style>
+</head>
+<body class="bg-gray-100">
+  <div id="map"></div>
+  <script>
+    const map = L.map("map").setView([-34.708, -58.395], 15);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 20,
+    }).addTo(map);
+
+    const socket = io();
+    const capas = {};
+
+    socket.on("linea", (data) => {
+      const layer = L.geoJSON(data.geojson, {
+        style: { color: data.color || "gray", weight: 5 }
+      }).addTo(map);
+      capas[data.id] = layer;
+    });
+
+    map.on("click", function(e) {
+      const latlngs = [
+        [e.latlng.lng, e.latlng.lat],
+        [e.latlng.lng + 0.001, e.latlng.lat + 0.001]
+      ];
+      const geojson = {
+        type: "LineString",
+        coordinates: latlngs
+      };
+      const nuevaLinea = {
+        id: Date.now().toString(),
+        color: "blue",
+        geojson: { type: "Feature", geometry: geojson, properties: {} }
+      };
+      socket.emit("nueva_linea", nuevaLinea);
+    });
+
+    socket.emit("pedir_lineas");
+  </script>
+</body>
+</html>
